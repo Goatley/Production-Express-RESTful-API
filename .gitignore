@@ -1,0 +1,21 @@
+#lets ignore any node modules - these can be pulled running "npm install" based on package.json
+node_modules
+
+#don't put any env variables up
+*.env
+
+#ignore any src files for illustrator
+*.ai
+
+#ignore prepross stuff
+prepros.config
+dist/prepros.config
+
+#ignore anythign in the env folder as well
+env
+
+#ignore our postgres stuff
+postgres
+
+#let's ignore our build files for now... they can be re-generated when running the "tsc" command
+build
