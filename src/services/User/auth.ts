@@ -6,9 +6,10 @@ import events from '../../subscribers/events.js';
 import emitter from '../../decorators/eventEmitter.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import { resolveModuleName } from 'typescript';
 
 
-export class userAuth {
+export class UserAuth {
 
     // private _emitter: Object;
 
@@ -27,18 +28,7 @@ export class userAuth {
      * @param {IUserInput} userInput - input received either via a post request or form submission from a front end
      * @return {*}  {Promise<IUser>} Returns a promise of a User object to attach to our request to authenticate the new user
      */
-    public async userSignUp(userInput: IUserInput): Promise<IUser> {
-
-        /**
-         * First, let's do a quick rough check to ensure that we at least have fields supplied
-         * todo will probably want to replace with some variation of a parameter checking npm package - thinking Joi
-         */
-        if (!userInput.firstName || !userInput.lastName || !userInput.password || !userInput.email) {
-            let err = new Error(`Please make sure you provide a valid first name, last name, email address and password for a new account.`)
-            err['status'] = 400;
-            throw err;
-        }
-
+    public async userSignUp(userInput: IUserInput): Promise<{user: IUser, token: string}> {
         /**
          * First, let's check to see if the user associated with this email already exists (it's basically a pseudo primary key - only one user per email allowed)
          * 
@@ -57,24 +47,52 @@ export class userAuth {
          * First, we need to generate a saltelt hash for their password to store in our DB, so we can verify on future sign in.
          * TO REITERATE - we DO NOT want to store their password in our DB... even after it's encrypted.  We want to salt + hash the password and store that.  Then, when they sign in in the future, we'll use the same salt + hashing algorithm on their entered password, and compare the final results to see if they are equivalent
          */
-        userInput['salt'] = await bcrypt.genSalt();
-        userInput['hash'] = await bcrypt.hash(userInput.password, userInput['salt']);
+        let salt = await bcrypt.genSalt();
+        let hash = await bcrypt.hash(userInput.password, salt);
 
-        let { _id, firstName, lastName, email } = await User.create(userInput);
+        let user = await User.create({ ...userInput, salt, hash });
 
         /**
          * If we were able to make a user, let's generate a token and send it back to them
          * todo - in the future, we can try to generate both a regular access token and a refresh token and establish automatic refreshing
          */
-        let token = this.generateToken({ _id, firstName, lastName, email } as ITokenData);
+        let { _id, email } = user;
+        let token = this.generateToken({ _id, email } as ITokenData);
 
 
         /**
          * if we were successful, let's emit an event called 'userSignUp' now so any subscribers listening can now kick off their services
          */
-        emitter.emit(events.user.signUp, { _id, firstName, lastName, email, token });
+        emitter.emit(events.user.signUp, user);
 
-        return { _id, firstName, lastName, email, token };
+        return { user, token };
+    }
+
+    public async userSignIn(userInput: IUserInput): Promise<{ user: IUser, token: string }> {
+        /**
+         * First, we need to check our DB to see if this actually is a user that already exists.  searching by email
+         */
+        let user = await User.findOne({ email: userInput.email });
+
+        if (!user) {
+            let err = new Error(`Unable to find a user registered to that email address.`);
+            err['status'] = 401;
+            throw err;
+        }
+
+        //Now, let's try to validate our user's input password
+        let validated = await bcrypt.compare(userInput.password, user.hash);
+
+        if (!validated) {
+            let err = new Error(`Incorrect password supplied.  Did you forget your password?`);
+            err['status'] = 401;
+            throw err;
+        }
+
+        //if we have an email and our passwords match, let's generate a token and send it back over
+        let token = this.generateToken({ _id: user._id, email: user.email });
+
+        return { user, token };
     }
 
 

@@ -11,5 +11,6 @@ export default interface IUser {
     firstName: string;
     lastName: string;
     email: string;
-    token: string;
+    salt: string;
+    hash: string;
 }
