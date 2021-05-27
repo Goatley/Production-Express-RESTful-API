@@ -4,18 +4,12 @@ node_modules
 #don't put any env variables up
 *.env
 
-#ignore any src files for illustrator
-*.ai
-
-#ignore prepross stuff
-prepros.config
-dist/prepros.config
-
-#ignore anythign in the env folder as well
+#ignore anythign in the env folder as well if we have one
 env
-
-#ignore our postgres stuff
-postgres
 
 #let's ignore our build files for now... they can be re-generated when running the "tsc" command
 build
+
+#no need to keep our logs that are generated
+log.txt
+*.log
