@@ -1,7 +1,6 @@
 import express from 'express';
 import cel from 'celebrate';
 import { emailRegex, passwordRegex } from '../../util/regex.js';
-import IUser from '../../Interfaces/auth/IUser.js';
 import IUserInput from '../../Interfaces/auth/IUserInput.js';
 import { UserAuth } from '../../services/User/auth.js';
 
@@ -40,7 +39,7 @@ export default function (app: express.Router) {
                 res.status(201).json({user_id: user._id, token})
             } catch(err) {
                 //this may be redundent as we could catch the errors later, but we may want custome error handling logic to pass down
-                next(err);
+                return next(err);
             }
         }
     )
@@ -62,7 +61,7 @@ export default function (app: express.Router) {
 
                 res.status(200).json({user_id: user._id, token});
             } catch (err) {
-                next(err)
+                return next(err)
             }
         }
     )

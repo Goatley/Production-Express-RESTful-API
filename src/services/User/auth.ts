@@ -6,7 +6,6 @@ import events from '../../subscribers/events.js';
 import emitter from '../../decorators/eventEmitter.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { resolveModuleName } from 'typescript';
 
 
 export class UserAuth {
@@ -107,7 +106,6 @@ export class UserAuth {
 
         return token
     }
-
 
 }
 
